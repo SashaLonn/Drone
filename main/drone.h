@@ -19,4 +19,27 @@
 #define MPU6050_GYRO_YOUT_H_REG_ADDR  0x45        /*!<Gyro Y_value_H */
 #define MPU6050_GYRO_ZOUT_H_REG_ADDR  0x47        /*!<Gyro Z_value_H */
 
+// Constants for PID parameters
+#define KP 1.0    // Proportional gain
+#define KI 0.0    // Integral gain
+#define KD 0.0    // Derivative gain
 
+// PID limits
+#define PID_OUTPUT_MIN -100.0
+#define PID_OUTPUT_MAX 100.0
+
+// PID sample time (milliseconds)
+#define PID_SAMPLE_TIME_MS 10
+
+// Target angles (adjust as needed)
+#define TARGET_ROLL 0.0
+#define TARGET_PITCH 0.0
+
+#define ACCEL_SENSITIVITY 16384.0  // Sensitivity for ±2g full scale
+#define GYRO_SENSITIVITY 131.0     // Sensitivity for ±250°/s full scale
+
+
+// PWM pinnar för motorer
+#define MOTOR1_PWM_GPIO    13  // Exempel: Använd GPIO 25 för PWM till motor 1
+#define MOTOR1_PWM_CHANNEL  LEDC_CHANNEL_0
+#define MOTOR_PWM_FREQ      1000 // PWM frekvens i Hz
