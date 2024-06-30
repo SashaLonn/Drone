@@ -7,6 +7,17 @@
 #include "drone.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
+#include <string.h>
+#include "esp_err.h"
+
+#include "freertos/task.h"
+
+
+
+
+
+static int s_retry_num = 0;
+
 
 
 
@@ -34,6 +45,11 @@ void pid_init(void) {
     last_error_roll = 0.0;
     last_error_pitch = 0.0;
 }
+
+
+
+
+
 
 // PID calculation function
 void calculate_pid(void) {
@@ -203,12 +219,22 @@ static void set_motor_speed(float pid_output_roll, float pid_output_pitch) {
 
 void app_main(void)
 {
+     // Initialize PID controller
+    pid_init();
+
+    // Initialisera PWM för motorer
+    motor_pwm_init();
+
+   
+
+    
+
     uint8_t data[2];    
     
     
     ESP_ERROR_CHECK(i2c_master_init());
     ESP_LOGI(TAG, "I2C initialized successfully");
-    vTaskDelay(pdMS_TO_TICKS(500));
+    vTaskDelay(pdMS_TO_TICKS(500)); 
 
 
     /* Read the MPU9250 WHO_AM_I register, on power up the register should have the value 0x71 */
@@ -232,12 +258,7 @@ void app_main(void)
 vTaskDelay(pdMS_TO_TICKS(500));
 
 
-   // Initialize PID controller
-    pid_init();
-
-    // Initialisera PWM för motorer
-    motor_pwm_init();
-
+  
 
 while (1){
 

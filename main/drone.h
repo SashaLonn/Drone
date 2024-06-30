@@ -43,3 +43,5 @@
 #define MOTOR1_PWM_GPIO    13  // Exempel: Använd GPIO 25 för PWM till motor 1
 #define MOTOR1_PWM_CHANNEL  LEDC_CHANNEL_0
 #define MOTOR_PWM_FREQ      1000 // PWM frekvens i Hz
+
+
