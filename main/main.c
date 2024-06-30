@@ -9,9 +9,137 @@
 #include "driver/ledc.h"
 #include <string.h>
 #include "esp_err.h"
-
+#include "esp_system.h"
+#include "esp_spi_flash.h"
+#include <esp_http_server.h>
+#include "nvs_flash.h"
+#include "connect_wifi.h"
 #include "freertos/task.h"
 
+
+char html_page[] = 
+"<!DOCTYPE HTML>"
+"<html>"
+"<head>"
+  "<title>ESP Web Server</title>"
+  "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
+  //"<link rel=\"icon\" href=\"data:,\">"
+  "<style>"
+    "body {"
+      "font-family: Arial, Helvetica, sans-serif;"
+      "text-align: center;"
+      "margin: 0;"
+    "}"
+    ".topnav {"
+      "overflow: hidden;"
+      "background-color: #333;"
+      "color: white;"
+      "font-size: 1.7rem;"
+    "}"
+    ".content {"
+    "  padding: 20px;"
+    "}"
+    ".cards {"
+      "display: flex;"
+      "justify-content: center;"
+      "flex-wrap: wrap;"
+    "}"
+    ".card {"
+      "background: #f4f4f4;"
+      "padding: 20px;"
+      "margin: 20px;"
+      "box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);"
+      "width: 300px;"
+      "border-radius: 5px;"
+    "}"
+    ".card-title {"
+      "font-size: 1.5rem;"
+      "margin-bottom: 10px;"
+    "}"
+    ".reading {"
+      "font-size: 1.2rem;"
+    "}"
+    ".cube-content {"
+      "margin-top: 20px;"
+    "}"
+    "#3Dcube {"
+      "width: 300px;"
+      "height: 300px;"
+      "margin: 0 auto;"
+    "}"
+  
+  "</style>"
+"</head>"
+"<body>"
+  "<div class=\"topnav\">"
+    "<h1><i class=\"far fa-compass\"></i> MPU6050 <i class=\"far fa-compass\"></i></h1>"
+  "</div>"
+  "<div class=\"content\">"
+    "<div class=\"cards\">"
+      "<div class=\"card\">"
+        "<p class=\"card-title\">GYROSCOPE</p>"
+        "<p><span class=\"reading\">X: <span id=\"gyroX\">%2f</span> rad</span></p>"
+        "<p><span class=\"reading\">Y: <span id=\"gyroY\">%2f</span> rad</span></p>"
+        "<p><span class=\"reading\">Z: <span id=\"gyroZ\">%2f</span> rad</span></p>"
+      "</div>"
+      "<div class=\"card\">"
+        "<p class=\"card-title\">ACCELEROMETER</p>"
+        "<p><span class=\"reading\">X: <span id=\"accX\">%2f</span> ms<sup>2</sup></span></p>"
+        "<p><span class=\"reading\">Y: <span id=\"accY\">%2f</span> ms<sup>2</sup></span></p>"
+        "<p><span class=\"reading\">Z: <span id=\"accZ\">%2f</span> ms<sup>2</sup></span></p>"
+      "</div>"
+    "</div>"
+      
+    "<div class=\"cube-content\">"
+      "<div id=\"3Dcube\"></div>"
+    "</div>"
+  "</div>"
+  "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/107/three.min.js\"></script>"
+  "<script>"
+ 
+   
+  "var scene = new THREE.Scene();"
+  "var camera = new THREE.PerspectiveCamera(75, 300 / 300, 0.1, 1000);"
+  "var renderer = new THREE.WebGLRenderer();"
+  "renderer.setSize(300, 300);"
+  "document.getElementById('3Dcube').appendChild(renderer.domElement);"
+
+  "var geometry = new THREE.BoxGeometry();"
+  "var material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });"
+  "var cube = new THREE.Mesh(geometry, material);"
+  "scene.add(cube);"
+
+  "camera.position.z = 5;" 
+
+"var animate = function () {"
+      "requestAnimationFrame(animate);"
+      "renderer.render(scene, camera);"
+    "};"
+
+  "animate();"
+ 
+     "requestAnimationFrame(animate);"
+      "renderer.render(scene, camera);"
+    "};"
+    "animate();"
+    "async function fetchData() {"
+      "const response = await fetch('/');"
+      "const data = await response.json();"
+      "document.getElementById('gyroX').innerText = data.gyroX.toFixed(2);"
+      "document.getElementById('gyroY').innerText = data.gyroY.toFixed(2);"
+      "document.getElementById('gyroZ').innerText = data.gyroZ.toFixed(2);"
+      "document.getElementById('accX').innerText = data.accX.toFixed(2);"
+      "document.getElementById('accY').innerText = data.accY.toFixed(2);"
+      "document.getElementById('accZ').innerText = data.accZ.toFixed(2);"
+      "cube.rotation.x = data.accX;"
+      "cube.rotation.y = data.accY;"
+      "cube.rotation.z = data.accZ;"
+
+
+  "setInterval(fetchData, 1000);"
+"</script>"
+"</body>"
+"</html>";
 
 
 
@@ -24,75 +152,13 @@ static int s_retry_num = 0;
 
 static const char *TAG = "i2c-simple-example";
 
-// PID variables
-float error_roll, error_pitch;    // Error terms for roll and pitch
-float integral_roll, integral_pitch;  // Integral terms for roll and pitch
-float derivative_roll, derivative_pitch;  // Derivative terms for roll and pitch
-float pid_output_roll, pid_output_pitch;  // PID outputs for roll and pitch
-float last_error_roll, last_error_pitch;  // Last error terms for roll and pitc
+
 
 
 float accel_x, accel_y, accel_z;  // Accelerometer data
 float gyro_x, gyro_y, gyro_z;     // Gyroscope data
 
-void read_mpu6050_data(float *ax, float *ay, float *az, float *gx, float *gy, float *gz);
-void calculate_pid(void);
-
-
-void pid_init(void) {
-    integral_roll = 0.0;
-    integral_pitch = 0.0;
-    last_error_roll = 0.0;
-    last_error_pitch = 0.0;
-}
-
-
-
-
-
-
-// PID calculation function
-void calculate_pid(void) {
-    // Calculate errors
-
-    read_mpu6050_data(&accel_x, &accel_y, &accel_z, &gyro_x, &gyro_y, &gyro_z);
-    error_roll = (TARGET_ROLL - accel_x) * ACCEL_SENSITIVITY;
-    error_pitch = (TARGET_PITCH - accel_y) * ACCEL_SENSITIVITY;
-
-    // Calculate integral terms
-    integral_roll += error_roll * PID_SAMPLE_TIME_MS / 1000.0;
-    integral_pitch += error_pitch * PID_SAMPLE_TIME_MS / 1000.0;
-
-    // Calculate derivative terms
-    derivative_roll = (error_roll - last_error_roll) / (PID_SAMPLE_TIME_MS / 1000.0);
-    derivative_pitch = (error_pitch - last_error_pitch) / (PID_SAMPLE_TIME_MS / 1000.0);
-
-    // Calculate PID outputs
-    pid_output_roll = KP * error_roll + KI * integral_roll + KD * derivative_roll;
-    pid_output_pitch = KP * error_pitch + KI * integral_pitch + KD * derivative_pitch;
-
-    // Apply PID output limits
-    if (pid_output_roll > PID_OUTPUT_MAX) {
-        pid_output_roll = PID_OUTPUT_MAX;
-    } else if (pid_output_roll < PID_OUTPUT_MIN) {
-        pid_output_roll = PID_OUTPUT_MIN;
-    }
-
-    if (pid_output_pitch > PID_OUTPUT_MAX) {
-        pid_output_pitch = PID_OUTPUT_MAX;
-    } else if (pid_output_pitch < PID_OUTPUT_MIN) {
-        pid_output_pitch = PID_OUTPUT_MIN;
-    }
-
-    // Update last error terms
-    last_error_roll = error_roll;
-    last_error_pitch = error_pitch;
-
-    // Print PID outputs (for debugging)
-    ESP_LOGI(TAG, "PID Output - Roll: %.2f, Pitch: %.2f", pid_output_roll, pid_output_pitch);
-
-    // TODO: Apply PID outputs to control your drone's motors or servos
-}
+//void read_mpu6050_data(float *ax, float *ay, float *az, float *gx, float *gy, float *gz);
 
 
 /**
@@ -202,29 +268,84 @@ static void motor_pwm_init(void) {
     
 }
 
-
-static void set_motor_speed(float pid_output_roll, float pid_output_pitch) {
-    // Beräkna duty cycle (0-1023) baserat på PID-utdata
-    uint32_t duty1 = (uint32_t)((pid_output_roll / PID_OUTPUT_MAX) * 1023);
-    uint32_t duty2 = (uint32_t)((pid_output_pitch / PID_OUTPUT_MAX) * 1023);
-
-    // Sätt PWM duty cycle för motorerna
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, MOTOR1_PWM_CHANNEL, duty1);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, MOTOR1_PWM_CHANNEL);
-
+esp_err_t send_web_page(httpd_req_t *req)
+{
+    int response;
+    read_mpu6050_data(&accel_x, &accel_y, &accel_z, &gyro_x, &gyro_y, &gyro_z);
     
+    char response_data[sizeof(html_page) + 50];
+    memset(response_data, 0, sizeof(response_data));
+    sprintf(response_data, html_page, accel_x, accel_y,accel_z,gyro_x,gyro_y,gyro_z);
+    response = httpd_resp_send(req, response_data, HTTPD_RESP_USE_STRLEN);
+
+    return response;
+}
+
+esp_err_t get_req_handler(httpd_req_t *req)
+{
+    return send_web_page(req);
+}
+
+esp_err_t get_sensor_data(httpd_req_t *req)
+{  
+      int response;
+    char json_response[1000]; // Justera storleken beroende på JSON-datans komplexitet
+    memset( json_response, 0, sizeof( json_response));
+
+    // Skapa JSON-strängen med sensorvärden
+    sprintf(json_response, "{\"accX\": %.2f, \"accY\": %.2f, \"accZ\": %.2f}",accel_x, accel_y,accel_z);
+
+    // Sätt HTTP-headers för JSON
+     response = httpd_resp_send(req, json_response,HTTPD_RESP_USE_STRLEN);
+
+    // Skicka JSON-svaret till klienten
+   
+
+    return response;
+}
+
+httpd_uri_t uri_get = {
+    .uri = "/",
+    .method = HTTP_GET,
+    .handler = get_req_handler,
+    .user_ctx = NULL};
+
+httpd_uri_t uri_get_sensor = {
+    .uri = "/sensor",
+    .method = HTTP_GET,
+    .handler =  get_sensor_data,
+    .user_ctx = NULL};
+
+
+httpd_handle_t setup_server(void)
+{ 
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.stack_size =6000;
+    httpd_handle_t server = NULL;
+
+    if (httpd_start(&server, &config) == ESP_OK)
+    {
+        httpd_register_uri_handler(server, &uri_get);
+         httpd_register_uri_handler(server, &uri_get_sensor);
+    }
+
+    return server;
 }
 
 
 
 void app_main(void)
 {
-     // Initialize PID controller
-    pid_init();
+   
 
     // Initialisera PWM för motorer
     motor_pwm_init();
-
+esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
    
 
     
@@ -245,6 +366,8 @@ void app_main(void)
     ESP_ERROR_CHECK(mpu6050_register_write_byte(0x6B, 0x00));
     vTaskDelay(pdMS_TO_TICKS(500));
 
+    connect_wifi();
+
     //ESP_LOGI(TAG, "WHO_AM_I2 = %X", data[1]);
 
     //ESP_ERROR_CHECK(mpu9250_register_write_byte(MPU9250_PWR_MGMT_1_REG_ADDR, 1 << MPU9250_RESET_BIT));
@@ -260,10 +383,13 @@ vTaskDelay(pdMS_TO_TICKS(500));
 
   
 
-while (1){
+while(wifi_connect_status){
+
+    setup_server();
+     ESP_LOGI(TAG, "Web Server is up and running\n");
 
 // Perform PID calculations
-    calculate_pid();
+   // calculate_pid();
 
     float ax, ay, az;  // Accelerometerdata
     float gx, gy, gz;  // Gyroskopdata
@@ -272,7 +398,7 @@ while (1){
     read_mpu6050_data(&ax, &ay, &az, &gx, &gy, &gz);
 
     // Initialisera PWM för motorer
-    motor_pwm_init();
+   //// motor_pwm_init();
 
 // Nu är variablerna ax, ay, az, gx, gy, gz fyllda med aktuella sensorvärden i enheter (g och °/s)
 // Du kan nu använda dessa värden för att göra vidare beräkningar eller logga dem, t.ex.:
@@ -288,6 +414,7 @@ while (1){
 
     ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     ESP_LOGI(TAG, "I2C de-initialized successfully");
+    ESP_LOGI(TAG, "Failed to connect with Wi-Fi, check your network credentials\n");
  
   
 
