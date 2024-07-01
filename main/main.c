@@ -10,20 +10,20 @@
 #include <string.h>
 #include "esp_err.h"
 #include "esp_system.h"
-#include "esp_spi_flash.h"
 #include <esp_http_server.h>
 #include "nvs_flash.h"
 #include "connect_wifi.h"
 #include "freertos/task.h"
+#include "spi_flash_mmap.h"
 
-
-char html_page[] = 
+char html_page[] =
 "<!DOCTYPE HTML>"
 "<html>"
 "<head>"
   "<title>ESP Web Server</title>"
+  "<link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css\">"
   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-  //"<link rel=\"icon\" href=\"data:,\">"
+  
   "<style>"
     "body {"
       "font-family: Arial, Helvetica, sans-serif;"
@@ -31,13 +31,14 @@ char html_page[] =
       "margin: 0;"
     "}"
     ".topnav {"
-      "overflow: hidden;"
-      "background-color: #333;"
+     "overflow: hidden;"
+      "background-color: #ff99cc;"
       "color: white;"
-      "font-size: 1.7rem;"
+      "font-size: 1.2rem;"
+      
     "}"
     ".content {"
-    "  padding: 20px;"
+      "padding: 20px;"
     "}"
     ".cards {"
       "display: flex;"
@@ -62,17 +63,19 @@ char html_page[] =
     ".cube-content {"
       "margin-top: 20px;"
     "}"
+    ".blue-icon {"
+  "color: blue;" /* Ändra färgen till blå */
+"}"
     "#3Dcube {"
       "width: 300px;"
       "height: 300px;"
       "margin: 0 auto;"
     "}"
-  
   "</style>"
 "</head>"
 "<body>"
   "<div class=\"topnav\">"
-    "<h1><i class=\"far fa-compass\"></i> MPU6050 <i class=\"far fa-compass\"></i></h1>"
+    "<h1> MPU6050 <i class=\"fas fa-drone blue-icon\" aria-hidden=\"true\" style=\"font-size: 1em;\"></i></h1>"
   "</div>"
   "<div class=\"content\">"
     "<div class=\"cards\">"
@@ -89,66 +92,59 @@ char html_page[] =
         "<p><span class=\"reading\">Z: <span id=\"accZ\">%2f</span> ms<sup>2</sup></span></p>"
       "</div>"
     "</div>"
-      
     "<div class=\"cube-content\">"
       "<div id=\"3Dcube\"></div>"
     "</div>"
   "</div>"
   "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/three.js/107/three.min.js\"></script>"
   "<script>"
- 
-   
-  "var scene = new THREE.Scene();"
-  "var camera = new THREE.PerspectiveCamera(75, 300 / 300, 0.1, 1000);"
-  "var renderer = new THREE.WebGLRenderer();"
-  "renderer.setSize(300, 300);"
-  "document.getElementById('3Dcube').appendChild(renderer.domElement);"
-
-  "var geometry = new THREE.BoxGeometry();"
-  "var material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });"
-  "var cube = new THREE.Mesh(geometry, material);"
-  "scene.add(cube);"
-
-  "camera.position.z = 5;" 
-
-"var animate = function () {"
-      "requestAnimationFrame(animate);"
+    "let scene, camera, renderer, cube;"
+     "const threshold = 0.02;"
+    "function init3D(){"
+      "scene = new THREE.Scene();"
+      "scene.background = new THREE.Color(0xffffff);"
+      "camera = new THREE.PerspectiveCamera(75, 300 / 300, 0.1, 1000);"
+      "renderer = new THREE.WebGLRenderer({ antialias: true });"
+      "renderer.setSize(300, 300);"
+      "document.getElementById('3Dcube').appendChild(renderer.domElement);"
+      "const geometry = new THREE.BoxGeometry(2, 2, 2);"
+      "const material = new THREE.MeshStandardMaterial({ color: 0x000000 });"
+      "cube = new THREE.Mesh(geometry, material);"
+      "scene.add(cube);"  
+      "camera.position.x = 5;"
+       "camera.lookAt(new THREE.Vector3(0, 0, 0));"
       "renderer.render(scene, camera);"
     "};"
 
-  "animate();"
- 
-     "requestAnimationFrame(animate);"
-      "renderer.render(scene, camera);"
+     "function filterNoise(value) {"
+        "return Math.abs(value) < threshold ? 0 : value;"
+   " };"
+    "function fetchData() {"
+      "fetch('/sensor')"
+        ".then(response => response.json())"
+        ".then(data => {"
+         "document.getElementById('gyroX').innerText = data.gyroX.toFixed(2);"
+          "document.getElementById('gyroY').innerText = data.gyroY.toFixed(2);"
+          "document.getElementById('gyroZ').innerText = data.gyroZ.toFixed(2);"
+        
+          "document.getElementById('accX').innerText = data.accX.toFixed(2);"
+          "document.getElementById('accY').innerText = data.accY.toFixed(2);"
+          "document.getElementById('accZ').innerText = data.accZ.toFixed(2);"
+          "cube.rotation.x = filterNoise(data.accX);"
+          "cube.rotation.y = filterNoise(data.accY);"
+          "cube.rotation.z = filterNoise(data.accZ);"
+          
+          "renderer.render(scene, camera);"
+        "})"
+        ".catch(error => console.error('Error:', error));"
     "};"
-    "animate();"
-    "async function fetchData() {"
-      "const response = await fetch('/');"
-      "const data = await response.json();"
-      "document.getElementById('gyroX').innerText = data.gyroX.toFixed(2);"
-      "document.getElementById('gyroY').innerText = data.gyroY.toFixed(2);"
-      "document.getElementById('gyroZ').innerText = data.gyroZ.toFixed(2);"
-      "document.getElementById('accX').innerText = data.accX.toFixed(2);"
-      "document.getElementById('accY').innerText = data.accY.toFixed(2);"
-      "document.getElementById('accZ').innerText = data.accZ.toFixed(2);"
-      "cube.rotation.x = data.accX;"
-      "cube.rotation.y = data.accY;"
-      "cube.rotation.z = data.accZ;"
-
-
-  "setInterval(fetchData, 1000);"
-"</script>"
+    "window.onload = () => {"
+      "init3D();"
+      "setInterval(fetchData, 10);"
+    "};"
+  "</script>"
 "</body>"
 "</html>";
-
-
-
-
-static int s_retry_num = 0;
-
-
-
-
 
 static const char *TAG = "i2c-simple-example";
 
@@ -293,7 +289,8 @@ esp_err_t get_sensor_data(httpd_req_t *req)
     memset( json_response, 0, sizeof( json_response));
 
     // Skapa JSON-strängen med sensorvärden
-    sprintf(json_response, "{\"accX\": %.2f, \"accY\": %.2f, \"accZ\": %.2f}",accel_x, accel_y,accel_z);
+    sprintf(json_response, "{\"accX\": %.2f, \"accY\": %.2f, \"accZ\": %.2f, \"gyroX\": %.2f, \"gyroY\": %.2f, \"gyroZ\": %.2f}",
+            accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z);
 
     // Sätt HTTP-headers för JSON
      response = httpd_resp_send(req, json_response,HTTPD_RESP_USE_STRLEN);
@@ -334,90 +331,54 @@ httpd_handle_t setup_server(void)
 
 
 
-void app_main(void)
-{
-   
-
-    // Initialisera PWM för motorer
+void app_main(void) {
     motor_pwm_init();
-esp_err_t ret = nvs_flash_init();
+    esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
-   
 
-    
-
-    uint8_t data[2];    
-    
-    
-    ESP_ERROR_CHECK(i2c_master_init());
+    uint8_t data[2]; 
+      ESP_ERROR_CHECK(i2c_master_init());
     ESP_LOGI(TAG, "I2C initialized successfully");
-    vTaskDelay(pdMS_TO_TICKS(500)); 
-
-
-    /* Read the MPU9250 WHO_AM_I register, on power up the register should have the value 0x71 */
 
     ESP_ERROR_CHECK(mpu6050_register_read(MPU6050_WHO_AM_I_REG_ADDR, data, 1));
     ESP_LOGI(TAG, "WHO_AM_I = %X", data[0]);
     vTaskDelay(pdMS_TO_TICKS(500));
     ESP_ERROR_CHECK(mpu6050_register_write_byte(0x6B, 0x00));
-    vTaskDelay(pdMS_TO_TICKS(500));
+    vTaskDelay(pdMS_TO_TICKS(500));   
+  
+    vTaskDelay(pdMS_TO_TICKS(500)); 
 
     connect_wifi();
-
-    //ESP_LOGI(TAG, "WHO_AM_I2 = %X", data[1]);
-
-    //ESP_ERROR_CHECK(mpu9250_register_write_byte(MPU9250_PWR_MGMT_1_REG_ADDR, 1 << MPU9250_RESET_BIT));
-
     vTaskDelay(pdMS_TO_TICKS(500));
     ESP_ERROR_CHECK(mpu6050_register_write_byte(0x23, 1));
     vTaskDelay(pdMS_TO_TICKS(500));
-    ESP_ERROR_CHECK(mpu6050_register_read(0x23, data, 1<<3));
+    ESP_ERROR_CHECK(mpu6050_register_read(0x23, data, 1));
     ESP_LOGI(TAG, "Started = %X", data[0]);
 
-vTaskDelay(pdMS_TO_TICKS(500));
+    if (wifi_connect_status) {
+        setup_server();
+        ESP_LOGI(TAG, "Web Server is up and running\n");
 
+        while (wifi_connect_status) {
+            read_mpu6050_data(&accel_x, &accel_y, &accel_z, &gyro_x, &gyro_y, &gyro_z);
+            ESP_LOGI(TAG, "Acc: X=%.2f g, Y=%.2f g, Z=%.2f g", accel_x, accel_y, accel_z);
+            ESP_LOGI(TAG, "Gyro: X=%.2f °/s, Y=%.2f °/s, Z=%.2f °/s", gyro_x, gyro_y, gyro_z);
+            vTaskDelay(pdMS_TO_TICKS(1000));   
+        }
+    } else {
+        ESP_LOGI(TAG, "Failed to connect with Wi-Fi, check your network credentials\n");
+    }
 
-  
-
-while(wifi_connect_status){
-
-    setup_server();
-     ESP_LOGI(TAG, "Web Server is up and running\n");
-
-// Perform PID calculations
-   // calculate_pid();
-
-    float ax, ay, az;  // Accelerometerdata
-    float gx, gy, gz;  // Gyroskopdata
-
-// Anropa funktionen för att läsa sensorvärden
-    read_mpu6050_data(&ax, &ay, &az, &gx, &gy, &gz);
-
-    // Initialisera PWM för motorer
-   //// motor_pwm_init();
-
-// Nu är variablerna ax, ay, az, gx, gy, gz fyllda med aktuella sensorvärden i enheter (g och °/s)
-// Du kan nu använda dessa värden för att göra vidare beräkningar eller logga dem, t.ex.:
-    ESP_LOGI(TAG, "Acc: X=%.2f g, Y=%.2f g, Z=%.2f g", ax, ay, az);
-    ESP_LOGI(TAG, "Gyro: X=%.2f °/s, Y=%.2f °/s, Z=%.2f °/s", gx, gy, gz);
-
-
-    vTaskDelay(pdMS_TO_TICKS(1000));   
-
-
-}
-
-
-    ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
+   // ESP_ERROR_CHECK(i2c_driver_delete(I2C_MASTER_NUM));
     ESP_LOGI(TAG, "I2C de-initialized successfully");
-    ESP_LOGI(TAG, "Failed to connect with Wi-Fi, check your network credentials\n");
- 
-  
+}
+
 
   
-}
+
+
 
