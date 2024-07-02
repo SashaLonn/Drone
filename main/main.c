@@ -146,9 +146,7 @@ char html_page[] =
 "</body>"
 "</html>";
 
-static const char *TAG = "i2c-simple-example";
-
-
+static const char *TAG = "WEb server";
 
 
 float accel_x, accel_y, accel_z;  // Accelerometer data

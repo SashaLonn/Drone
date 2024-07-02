@@ -25,7 +25,7 @@ You can install ESP-IDF in different ways; I use it as a VS Code extension (http
 
 Choose the correct version; the version I use is 5.1.2. There may be differences depending on which version you choose.
 
-"Before you start coding, you need to make sure everything is working fine. Use this command in the terminal inside VS Code: idf.py. If everything is working, you will see ![alt text](image.png).  These are all terminal commands you can use.
+"Before you start coding, you need to make sure everything is working fine. Use this command in the terminal inside VS Code: idf.py. If everything is working, you will see ![alt text](<Skärmbild 2024-06-30 195202.png>).  These are all terminal commands you can use.
 
 I recommend cloning my repository to work with the code. ESP-IDF has many configurations, which can be tricky to set up from scratch.
 
@@ -60,11 +60,103 @@ PlatformIO, on the other hand, is easier to use, especially for beginners. It su
 
 ## The code
 
+# To find the register addresses:
+Go to the MPU6050 datasheet and press Ctrl+F to search. Search for "accel_x" to find the relevant register address, as shown in this image:![alt text](<Skärmbild 2024-07-02 111518.png>). You can use both hexadecimal and decimal numbers. Repeat the process for "gyro_x". I have defined only the high-value address because the low value is the next address, but you can define both addresses as needed to modify the code in the int16_t read_raw_data(int addr); function. All my addresses are defined in drone.h Remember that you need all values for all three axes (x, y, and z) for both accelerometer and gyroscope data.
+
+
+To read data directly from registers:
+
+
+Define variables to store accelerometer and gyroscope data as floats, since the data is decimal.
+float accel_x, accel_y, accel_z;  // Accelerometer data
+float gyro_x, gyro_y, gyro_z;     // Gyroscope data
+
+
+First, define a function that reads data from a specific address:
+static esp_err_t mpu6050_register_read(uint8_t reg_addr, uint8_t *data, size_t len){
+
+    return i2c_master_write_read_device(I2C_MASTER_NUM, MPU6050_SENSOR_ADDR, &reg_addr, 1, data, len, I2C_MASTER_TIMEOUT_MS / portTICK_PERIOD_MS);
+
+}
+
+Data from the MPU6050 sensor is 2 bytes: a high byte and a low byte. First, we read the high byte and store it in a high value variable, then bit-shift it 8 bits to the left and store it in a data array. Error checking is done using the library functions provided in the ESP-IDF for error checking, and ESP_LOGI is used to print out messages to the console.
+
+Next, we read the low byte from the address, which is the next address after the high byte. The data+1 indicates reading the next data byte, and 1 means read only 1 byte.
+
+The value variable combines the two bytes into one by using bit-shifting and ORing, which means both bytes are combined. Then, this combined value is returned in the next function.
+
+int16_t read_raw_data(int addr){
+    int16_t high_byte,low_byte,value;
+    uint8_t data[2];
+
+    ESP_ERROR_CHECK(mpu6050_register_read(addr ,data, 1));
+
+    high_byte = data[0]<<8;
+
+    ESP_ERROR_CHECK(mpu6050_register_read(addr+1, data+1, 1));
+   
+    low_byte = data[1];
+  
+    value = (high_byte | low_byte);
+
+
+    return value;
+    }
+     Because the data we receive from int16_t read_raw_data(int addr); is in an unoptimized format, we can modify it according to our specific needs. You can adjust the ACCEL_SENSITIVITY in drone.h. We store each data using pointers, allowing easy access to these values throughout the program.
+    void read_mpu6050_data(float *ax, float *ay, float *az, float *gx, float *gy, float *gz){
+
+
+    *ax = read_raw_data(MPU6050_ACCEL_XOUT_H_REG_ADDR) / ACCEL_SENSITIVITY;
+    *ay = read_raw_data(MPU6050_ACCEL_YOUT_H_REG_ADDR) / ACCEL_SENSITIVITY;
+    *az = read_raw_data(MPU6050_ACCEL_ZOUT_H_REG_ADDR) / ACCEL_SENSITIVITY;
+
+    *gx = read_raw_data(MPU6050_GYRO_XOUT_H_REG_ADDR) / GYRO_SENSITIVITY;
+    *gy = read_raw_data(MPU6050_GYRO_YOUT_H_REG_ADDR) / GYRO_SENSITIVITY;
+    *gz = read_raw_data(MPU6050_GYRO_ZOUT_H_REG_ADDR) / GYRO_SENSITIVITY;
+}
+
 
 ## Transmitting the data 
 
+Data is sent every 10 milliseconds using <"setInterval(fetchData, 10);"> in  HTML code. In the HTML, there is a fetch function that takes a JSON response from the function <esp_err_t get_sensor_data(httpd_req_t *req);>. In <httpd_handle_t setup_server(void);>,  creats the server and set up the routes in the app_main function.
+
+I use the I2C protocol to read data from registers and Wi-Fi connections to send data to the web server.
+
+First instisilisera I2C :
+static esp_err_t i2c_master_init(void)
+{    int i2c_master_port = I2C_MASTER_NUM;
+
+    i2c_config_t conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = I2C_MASTER_SDA_IO,// defaund inr the drone.h
+        .scl_io_num = I2C_MASTER_SCL_IO,// defaund inr the drone.h
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,// set an intern pull upp resister for
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,// set an intern pull upp resister for
+        .master.clk_speed = I2C_MASTER_FREQ_HZ,// how often uot wat to send data
+
+    };
+
+    instalerra drivers for I2c
+    i2c_param_config(i2c_master_port, &conf);
+    return i2c_driver_install(i2c_master_port, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+
+}
+
+in picture below you can found pinout of the microcontroller
+![alt text](<Skärmbild 2024-07-02 101732.png>)
+
+
+All Wi-Fi cod is deveded in one separatly maps connect_wifi.c and connect_wifi.h It starts by setting up the Wi-Fi network details like the SSID (network name) and password. It then creates an event group to handle connection events.
+
+ If it gets disconnected, it will retry connecting until it reaches the maximum number of retries. If it successfully connects and gets an IP address, it marks the connection as successful.
+
+
+
+
 
 ## Presenting the data
+
+the final project is on developing
 
 
 
