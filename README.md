@@ -1,4 +1,4 @@
-## 3D Visualization MPU6050 WebServese using ESP32-s3 Feather
+## DC motors MPU 6050 controlling  using ESP32-s3 Feather
 Sasha Soloviova ss226sh
 
 3Dcubb visualization of accelerometer and gyrometer values from MPU-6050 using ESP32-S3 MCU. The results are displayed on a local web server using Wi-Fi.Data is read directly from registers using the C language
@@ -9,7 +9,7 @@ I had a problem with the installation of Espressif IDF. Besides that, it will ta
 It is my dream to build a drone from scratch. This is the first step in my drone project. These values will help define the drone's position and assist in self-adjusting its orientation. By building this project, I will gain a good understanding of how the ESP-IDF works, how to read and visualize sensor values, and much more.
 ## List of material
 
-MC -Esp32-s3 is a microcontroller made by Espressif Systems. It has dual-core processors running up to 240 MHz, with Wi-Fi and Bluetooth for wireless connections.The ESP32-S3 includes UART, SPI, I2C, and ADC interfaces for connecting sensors and devices . Low power consumption. (See datastit https://cdn-learn.adafruit.com/downloads/pdf/adafruit-esp32-s3-feather.pdf)
+MC -Esp32-s3 is a microcontroller made by . It has dual-core processors running up to 240 MHz, with Wi-Fi and Bluetooth for wireless connections.The ESP32-S3 includes UART, SPI, I2C, and ADC interfaces for connecting sensors and devices . Low power consumption. (See datastit https://cdn-learn.adafruit.com/downloads/pdf/adafruit-esp32-s3-feather.pdf)
 
 Sensor MPU 6050 combines a 3-axis accelerometer and a 3-axis gyroscope. This allows it to measure both acceleration and rotation rate. Communicates with microcontrollers through I2C (Inter-Integrated Circuit) protocol, (https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/RM-MPU-6000A.pdf)
 
@@ -25,7 +25,7 @@ You can install ESP-IDF in different ways; I use it as a VS Code extension (http
 
 Choose the correct version; the version I use is 5.1.2. There may be differences depending on which version you choose.
 
-"Before you start coding, you need to make sure everything is working fine. Use this command in the terminal inside VS Code: idf.py. If everything is working, you will see ![alt text](<Skärmbild 2024-06-30 195202.png>).  These are all terminal commands you can use.
+"Before you start coding, you need to make sure everything is working fine. Use this command in the terminal inside VS Code: idf.py. If everything is working, you will see ![alt text](<terminal.png>).  These are all terminal commands you can use.
 
 I recommend cloning my repository to work with the code. ESP-IDF has many configurations, which can be tricky to set up from scratch.
 
@@ -61,7 +61,7 @@ PlatformIO, on the other hand, is easier to use, especially for beginners. It su
 ## The code
 
 # To find the register addresses:
-Go to the MPU6050 datasheet and press Ctrl+F to search. Search for "accel_x" to find the relevant register address, as shown in this image:![alt text](<Skärmbild 2024-07-02 111518.png>). You can use both hexadecimal and decimal numbers. Repeat the process for "gyro_x". I have defined only the high-value address because the low value is the next address, but you can define both addresses as needed to modify the code in the int16_t read_raw_data(int addr); function. All my addresses are defined in drone.h Remember that you need all values for all three axes (x, y, and z) for both accelerometer and gyroscope data.
+Go to the MPU6050 datasheet and press Ctrl+F to search. Search for "accel_x" to find the relevant register address, as shown in this image:![alt text](<register_addr.png.png>). You can use both hexadecimal and decimal numbers. Repeat the process for "gyro_x". I have defined only the high-value address because the low value is the next address, but you can define both addresses as needed to modify the code in the int16_t read_raw_data(int addr); function. All my addresses are defined in drone.h Remember that you need all values for all three axes (x, y, and z) for both accelerometer and gyroscope data.
 
 
 To read data directly from registers:
@@ -143,7 +143,7 @@ static esp_err_t i2c_master_init(void)
 }
 
 in picture below you can found pinout of the microcontroller
-![alt text](<Skärmbild 2024-07-02 101732.png>)
+![alt text](<layout.png>)
 
 
 All Wi-Fi cod is deveded in one separatly maps connect_wifi.c and connect_wifi.h It starts by setting up the Wi-Fi network details like the SSID (network name) and password. It then creates an event group to handle connection events.

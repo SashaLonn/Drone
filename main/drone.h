@@ -42,6 +42,9 @@
 // PWM pinnar för motorer
 #define MOTOR1_PWM_GPIO    13  // Exempel: Använd GPIO 25 för PWM till motor 1
 #define MOTOR1_PWM_CHANNEL  LEDC_CHANNEL_0
-#define MOTOR_PWM_FREQ      1000 // PWM frekvens i Hz
+#define MOTOR_PWM_FREQ      5000 // PWM frekvens i Hz
+
+#define MOTOR2_PWM_GPIO  12
+#define MOTOR2_PWM_CHANNEL LEDC_CHANNEL_1
 
 

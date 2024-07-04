@@ -92,6 +92,7 @@ char html_page[] =
         "<p><span class=\"reading\">Z: <span id=\"accZ\">%2f</span> ms<sup>2</sup></span></p>"
       "</div>"
     "</div>"
+   
     "<div class=\"cube-content\">"
       "<div id=\"3Dcube\"></div>"
     "</div>"
@@ -107,11 +108,11 @@ char html_page[] =
       "renderer = new THREE.WebGLRenderer({ antialias: true });"
       "renderer.setSize(300, 300);"
       "document.getElementById('3Dcube').appendChild(renderer.domElement);"
-      "const geometry = new THREE.BoxGeometry(2, 2, 2);"
+      "const geometry = new THREE.BoxGeometry(4, 4, 4);"
       "const material = new THREE.MeshStandardMaterial({ color: 0x000000 });"
       "cube = new THREE.Mesh(geometry, material);"
       "scene.add(cube);"  
-      "camera.position.x = 5;"
+      "camera.position.x = 7;"
        "camera.lookAt(new THREE.Vector3(0, 0, 0));"
       "renderer.render(scene, camera);"
     "};"
@@ -143,8 +144,9 @@ char html_page[] =
       "setInterval(fetchData, 10);"
     "};"
   "</script>"
-"</body>"
+   "</body>"
 "</html>";
+
 
 static const char *TAG = "WEb server";
 
@@ -239,6 +241,16 @@ static esp_err_t i2c_master_init(void)
     return i2c_driver_install(i2c_master_port, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
 
 }
+static void motor_gpio_init(void) {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << MOTOR1_PWM_GPIO) | (1ULL << MOTOR2_PWM_GPIO),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&io_conf);
+}
 
 static void motor_pwm_init(void) {
     ledc_timer_config_t ledc_timer = {
@@ -259,7 +271,68 @@ static void motor_pwm_init(void) {
     };
     ledc_channel_config(&ledc_channel1);
 
+    ledc_channel_config_t ledc_channel2 = {
+        .gpio_num = MOTOR2_PWM_GPIO,          // GPIO nummer för motor 2
+        .speed_mode = LEDC_LOW_SPEED_MODE,    // Låg hastighetsläge
+        .channel = MOTOR2_PWM_CHANNEL,        // PWM kanal för motor 2
+        .intr_type = LEDC_INTR_DISABLE,       // Avaktivera avbrott
+        .timer_sel = LEDC_TIMER_0,            // Använd Timer 0
+        .duty = 0                             // Start duty cycle 0 (motor stannad)
+    };
+    ledc_channel_config(&ledc_channel2);
+
     
+}
+
+
+
+
+
+void  motor_control_task(void *pvParameters) {
+    
+    while (1) {
+        // Läs accelerometerdata
+          read_mpu6050_data(&accel_x, &accel_y, &accel_z, &gyro_x, &gyro_y, &gyro_z);
+
+        // Kontrollera villkor för att justera motorhastighet
+        if (accel_x <-0.5  ) {
+            // Beräkna ny duty cycle baserat på accelerometerdata
+            uint32_t duty = 1023; // Exempel: 0 till 1000 baserat på ay-värdet (anpassa efter din hårdvara)
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+             ESP_LOGI(TAG, "Motor duty set to %u",(unsigned int) duty);
+               
+        } 
+        else if (accel_x >0.5){
+            // Beräkna ny duty cycle baserat på accelerometerdata
+            uint32_t duty = 1023; // Exempel: 0 till 1000 baserat på ay-värdet (anpassa efter din hårdvara)
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, duty);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
+             ESP_LOGI(TAG, "Motor 2 duty set to %u",(unsigned int) duty);
+               
+        }else if (accel_y >0.4){
+            // Beräkna ny duty cycle baserat på accelerometerdata
+            uint32_t duty = 1023; // Exempel: 0 till 1000 baserat på ay-värdet (anpassa efter din hårdvara)
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, duty);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+             ESP_LOGI(TAG, "2 Motors  duty set to %u",(unsigned int) duty);
+               
+        }
+        
+        
+        else {
+            // Stoppa motorn om inget villkor är uppfyllt
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 0);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
+            
+        }
+
+     vTaskDelay(pdMS_TO_TICKS(100));
+    }
 }
 
 esp_err_t send_web_page(httpd_req_t *req)
@@ -316,6 +389,7 @@ httpd_handle_t setup_server(void)
 { 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.stack_size =6000;
+    config.server_port = 80;
     httpd_handle_t server = NULL;
 
     if (httpd_start(&server, &config) == ESP_OK)
@@ -330,6 +404,7 @@ httpd_handle_t setup_server(void)
 
 
 void app_main(void) {
+    motor_gpio_init();
     motor_pwm_init();
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -348,7 +423,6 @@ void app_main(void) {
     ESP_ERROR_CHECK(mpu6050_register_write_byte(0x6B, 0x00));
     vTaskDelay(pdMS_TO_TICKS(500));   
   
-    vTaskDelay(pdMS_TO_TICKS(500)); 
 
     connect_wifi();
     vTaskDelay(pdMS_TO_TICKS(500));
@@ -356,6 +430,7 @@ void app_main(void) {
     vTaskDelay(pdMS_TO_TICKS(500));
     ESP_ERROR_CHECK(mpu6050_register_read(0x23, data, 1));
     ESP_LOGI(TAG, "Started = %X", data[0]);
+   xTaskCreate(motor_control_task, "motor_control_task", 4096, NULL, 5, NULL);
 
     if (wifi_connect_status) {
         setup_server();
@@ -365,6 +440,7 @@ void app_main(void) {
             read_mpu6050_data(&accel_x, &accel_y, &accel_z, &gyro_x, &gyro_y, &gyro_z);
             ESP_LOGI(TAG, "Acc: X=%.2f g, Y=%.2f g, Z=%.2f g", accel_x, accel_y, accel_z);
             ESP_LOGI(TAG, "Gyro: X=%.2f °/s, Y=%.2f °/s, Z=%.2f °/s", gyro_x, gyro_y, gyro_z);
+           
             vTaskDelay(pdMS_TO_TICKS(1000));   
         }
     } else {
