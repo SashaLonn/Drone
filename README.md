@@ -35,21 +35,28 @@ This repository includes the KiCad schematic file (`drone.kicad_sch`) for the dr
 - **SCL**: Connect to the SCL pin on your microcontroller ( pin 4).
 
 # Connecting DC motor to ESP32-s3 
-Transistor connection wich has three pins:
+
+## Transistor Connections
 ![see hee](transistor.png) 
 
-Base.2 -> Connects to the microcontroller pin. My transistor connects to pins 13 and 12, but you can choose another pin and initialize it in the code as PWM.
-Collector.1 -> GND
-Emitter.3 -> Connects through a 10kOhm resistor to the 3.3V and to the mosfet 
+Connect the transistor as follows:
 
-Mosfet connection:
+- **Base (pin 2)**: Connects to a PWM-capable microcontroller pin. For example, pins 13 or 12 can be used, but ensure to initialize it as PWM in your code.
+- **Collector (pin 1)**: Connect to ground (GND).
+- **Emitter (pin 3)**: Connect through a 10kOhm resistor to 3.3V supply. Also, connect this point to the gate of the MOSFET using another 10kOhm resistor.
+
+
+## MOSFET Connections
 ![MOSFET](mosfet.png)
 
-Gate (1)-> Connects to the transistor's emitter.3 -> and the motor's negative cable.
-Source.3 -> GND
-Drain.2 _> Connects in parallel to the diode.
+Connect the MOSFET as follows:
 
-Motor plus cabel to the power
+- **Gate (pin 1)**: Connects to the emitter of the transistor (pin 3) and to the negative cable of the motor.
+- **Source (pin 3)**: Connect to ground (GND).
+- **Drain (pin 2)**: Connect in parallel with a diode.
+
+Ensure the motor's positive cable is connected to the power supply as per your project requirements.
+
 
 
 ## Computer setup 
