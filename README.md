@@ -157,9 +157,8 @@ All Wi-Fi cod is deveded in one separatly maps connect_wifi.c and connect_wifi.h
 
 
 ## Presenting the data
-
-the final project is on developing
-
+Data is presented on the local web server. My HTML code is stored inside a char array in main.c. I see this as a bad practice. I tried to create a separate directory and use it, but it required opening the folder with additional code, which I couldn't manage. So I used my simpler solution. Here is result:![alt text](webServer.png)
+And video:<video controls src="webserver.mp4" title="Title"></video>
 
 
 
