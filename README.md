@@ -8,9 +8,15 @@ I had a problem with the installation of Espressif IDF, it can take some extra t
 It is my dream to build a drone from scratch. This is the first step in my drone project. These values from MPU 6050 will help define the drone's position and assist in self-adjusting its orientation and controlling DC motors.By building this project, I will gain a good understanding of how the ESP-IDF works, how to read and visualize sensor values, how to controll motors with PWM, and much more.
 
 ## List of material
-|MC- Esp32-s3| ![Alt text 1](ESP32-s3.jpg)|
 
-MC -Esp32-s3 is a microcontroller made by . It has dual-core processors running up to 240 MHz, with Wi-Fi and Bluetooth for wireless connections.The ESP32-S3 includes UART, SPI, I2C, and ADC interfaces for connecting sensors and devices . Low power consumption. (See datastit https://cdn-learn.adafruit.com/downloads/pdf/adafruit-esp32-s3-feather.pdf)
+ Name | Sensor | Description
+--- | --- | ---
+
+[MC- Esp32-s3](https://www.amazon.se/Adafruit-Feather-ESP32-S3-Flash-PSRAM/dp/B0B2DH5T9C) | ![](ESP32-s3.jpg) | MC -Esp32-s3 is a microcontroller made by . It has dual-core processors running up to 240 MHz, with Wi-Fi and Bluetooth for wireless connections.The ESP32-S3 includes UART, SPI, I2C, and ADC interfaces for connecting sensors and devices . Low power consumption. (See datastit https://cdn-learn.adafruit.com/downloads/pdf/adafruit-esp32-s3-feather.pdf)
+
+
+
+
 
 Sensor MPU 6050 combines a 3-axis accelerometer and a 3-axis gyroscope. This allows it to measure both acceleration and rotation rate. Communicates with microcontrollers through I2C (Inter-Integrated Circuit) protocol, (https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/RM-MPU-6000A.pdf)
 
