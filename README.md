@@ -10,16 +10,46 @@ It is my dream to build a drone from scratch. This is the first step in my drone
 | Produkt | Bild | Beskrivning |
 |---------|------|-------------|
 | [MC- Esp32-s3](https://www.amazon.se/Adafruit-Feather-ESP32-S3-Flash-PSRAM/dp/B0B2DH5T9C) | ![ESP32-s3](ESP32-s3.jpg) | MC -Esp32-s3 is a microcontroller made by . It has dual-core processors running up to 240 MHz, with Wi-Fi and Bluetooth for wireless connections. The ESP32-S3 includes UART, SPI, I2C, and ADC interfaces for connecting sensors and devices. Low power consumption. (Se datasheet [här](https://cdn-learn.adafruit.com/downloads/pdf/adafruit-esp32-s3-feather.pdf)) |
+| [MPU 6050](https://www.electrokit.com/mpu-6050-accelerometer-3-axel-gyro-monterad-pa-kort) | ![MPU 6050](mpu.png) | Sensor MPU 6050 kombinerar en 3-axlig accelerometer och en 3-axlig gyroskop. Detta gör att den kan mäta både acceleration och rotationshastighet. Kommunicerar med mikrokontroller via I2C (Inter-Integrated Circuit)-protokoll. (Se datasheet [här](https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/RM-MPU-6000A.pdf)) |
+| [DC Motor](https://www.electrokit.com/dc-motor-med-flaktblad-3-6v) | ![DC Motor](dcmotor.png) | DC motor with fan blades, dimensions: 20 x 12 x 10 mm. Operating voltage: 3 - 6 VDC (3.7 V nominal). Current consumption: 70 mA (unloaded), 600 mA (with fan blade), 1200 mA (stalled). Speed (unloaded): 12000 rpm. |
+| [MOSFET](https://www.sigmanortec.ro/en/irf520-transistor?srsltid=AfmBOopwq6P9rCEQzEFoACTVYx5EDV9R7Y70CuiT8Wa_4fcldLFeqWRkaPs) | ![MOSFET](mosfet.png) | Continuous Drain Current (ID): 9.2A. Drain to Source Breakdown Voltage: 100V. Drain Source Resistance (RDS): 0.27 Ohms. Gate threshold voltage (VGS-th): 4V (max). |
+| [Transistor](https://www.electrokit.com/en/standard-npn-transistor-bc547-100-pack) | ![Transistor](transistor.png) | The maximum current gain of BC547 is 800. The Collector−Emitter Voltage is 65V. The Collector-Base Voltage is 80V. The Emitter-Base Voltage is 8V. |
+| [1N4004 Diode](https://www.amazon.com/gp/product/B007O040WI/ref=as_li_ss_tl?ie=UTF8&camp=1789&creative=390957&creativeASIN=B007O040WI&linkCode=as2&tag=jeremybcom-20) | ![Diode](image.png) | Diodes are two-terminal passive devices that allow current to flow in only one direction. They are frequently used to protect from voltage spikes, to protect I/O pins, to form rectifiers, and more. |
+| [Resistor](https://www.electrokit.com/en/motstand-metallfilm-0.6w-110kohm-10k) | ![Resistor](image-1.png) | 10kohm (10k) resistor. |
+| [Jumper Wire](https://www.amazon.se/AZDelivery-kompatibel-Raspberry-Breadboard-inklusive/dp/B07KKJ69DV?source=ps-sl-shoppingads-lpcontext&ref_=fplfs&smid=A1X7QLRQH87QA3&th=1) | ![Jumper Wires](image-2.png) | Jumper wires for connecting components on breadboards and circuits. |
 
+## Circuit diagram 
 
+Note: The microcontroller I used in the schematic is not the same as the one I used in reality. KiCad didn't have versions for the ESP32-S3-Feather which I used. Instead, I used the ESP32-S3-Mini1 (same chip).So the pins are different. It's not so important; I wrote the pins I use in the code in parentheses.
 
+Note: I troliget need more resistirs, spesially kring transistor
 
+![chematic](image-3.png)
+This repository includes the KiCad schematic file (`drone.kicad_sch`) for the drone project. The schematic provides a detailed circuit diagram of the drone's electronic components.
 
-Sensor MPU 6050 combines a 3-axis accelerometer and a 3-axis gyroscope. This allows it to measure both acceleration and rotation rate. Communicates with microcontrollers through I2C (Inter-Integrated Circuit) protocol, (https://cdn.sparkfun.com/datasheets/Sensors/Accelerometers/RM-MPU-6000A.pdf)
+# Connecting MPU 6050 with ESP32-s3
 
-usb C Cabel for connection to MC and computer
- 
-6 cabels to connect sensor with mc
+MPU VDD to 3.3 V
+GND to GND(4)
+SDA to SDA(4)
+SCL to SCL 
+
+# Connecting DC motor to ESP32-s3 
+Transistor connection wich has three pins:
+![see hee](transistor.png) 
+
+Base.2 -> Connects to the microcontroller pin. My transistor connects to pins 13 and 12, but you can choose another pin and initialize it in the code as PWM.
+Collector.1 -> GND
+Emitter.3 -> Connects through a 10kOhm resistor to the 3.3V and to the mosfet 
+
+Mosfet connection:
+![MOSFET](mosfet.png)
+
+Gate (1)-> Connects to the transistor's emitter.3 -> and the motor's negative cable.
+Source.3 -> GND
+Drain.2 _> Connects in parallel to the diode.
+
+Motor plus cabel to the power
 
 
 ## Computer setup 
@@ -30,7 +60,7 @@ You can install ESP-IDF in different ways; I use it as a VS Code extension (http
 
 Choose the correct version; the version I use is 5.1.2. There may be differences depending on which version you choose.
 
-"Before you start coding, you need to make sure everything is working fine. Use this command in the terminal inside VS Code: idf.py. If everything is working, you will see ![alt text](<terminal.png>).  These are all terminal commands you can use.
+"Before you start coding, you need to make sure everything is working fine. Use this command in the terminal inside VS Code: idf.py. If everything is working, you will see ![terminal](<terminal.png>).  These are all terminal commands you can use.
 
 I recommend cloning my repository to work with the code. ESP-IDF has many configurations, which can be tricky to set up from scratch.
 
@@ -121,7 +151,7 @@ int16_t read_raw_data(int addr){
 }
 
 
-## Transmitting the data 
+### Transmitting the data 
 
 Data is sent every 10 milliseconds using <"setInterval(fetchData, 10);"> in  HTML code. In the HTML, there is a fetch function that takes a JSON response from the function <esp_err_t get_sensor_data(httpd_req_t *req);>. In <httpd_handle_t setup_server(void);>,  creats the server and set up the routes in the app_main function.
 
@@ -148,12 +178,101 @@ static esp_err_t i2c_master_init(void)
 }
 
 in picture below you can found pinout of the microcontroller
-![alt text](<layout.png>)
+![layout](<layout.png>)
 
 
 All Wi-Fi cod is deveded in one separatly maps connect_wifi.c and connect_wifi.h It starts by setting up the Wi-Fi network details like the SSID (network name) and password. It then creates an event group to handle connection events.
 
  If it gets disconnected, it will retry connecting until it reaches the maximum number of retries. If it successfully connects and gets an IP address, it marks the connection as successful.
+
+### Controlling motor 
+
+Initialize the motor: You can initialize all motors in the same function, setting them to output mode and configuring the necessary resistors.
+
+1ULL: "ULL" stands for "Unsigned Long Long". This denotes that the number is an unsigned long long integer. "1ULL" represents a 64-bit integer with the value 1.
+
+(1ULL << MOTOR1_PWM_GPIO): This shifts the bit with the value 1 to the left by the number of positions specified by MOTOR1_PWM_GPIO.
+
+|: This is the bitwise OR operator. It combines two binary numbers such that each bit in the result is 1 if either of the corresponding bits of the operands is 1.
+
+static void motor_gpio_init(void) {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << MOTOR1_PWM_GPIO) | (1ULL << MOTOR2_PWM_GPIO),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    }; 
+    gpio_config(&io_conf);
+}
+
+I use PWM to control the motors. PWM stands for Pulse Width Modulation, which sends current depending on the duty cycle. If the duty cycle is 100%, the motor will run at full speed, and it decreases as the duty cycle decreases. Here, we initialize a channel for PWM. We need to have a separate channel for each motor.
+
+static void motor_pwm_init(void) {
+    ledc_timer_config_t ledc_timer = {
+        .duty_resolution = LEDC_TIMER_10_BIT, // 10-bit PWM upplösning
+        .freq_hz = MOTOR_PWM_FREQ,            // PWM frekvens
+        .speed_mode = LEDC_LOW_SPEED_MODE,   // LOw spees mode 
+        .timer_num = LEDC_TIMER_0             // Timer 0
+    };
+    ledc_timer_config(&ledc_timer);
+
+    ledc_channel_config_t ledc_channel1 = {
+        .gpio_num = MOTOR1_PWM_GPIO,          // GPIO nummer för motor 1
+        .speed_mode = LEDC_LOW_SPEED_MODE,   // Low speed mode
+        .channel = MOTOR1_PWM_CHANNEL,        // PWM kanal för motor 1
+        .intr_type = LEDC_INTR_DISABLE,       // Avaktivera avbrott
+        .timer_sel = LEDC_TIMER_0,            // Använd Timer 0
+        .duty = 0                             // Start duty cycle 0 (motor stannad)
+    };
+    ledc_channel_config(&ledc_channel1);}
+
+Create a motor task to read the values and use them to control the motors depending on the acceleration in the X and Y directions. If the X value is less than -0.5, the right motor (Motor 1) will turn on. If it is more than 0.5, Motor 2 will turn on. If the Y acceleration changes, both motors will turn on. The duty value = 1023 corresponds to 100%, meaning the motors will run at full power. When it returns to the neutral position, the motors will be turned off.
+
+void motor_control_task(void *pvParameters) {
+    
+    while (1) {
+        // Read accelerometer data
+        read_mpu6050_data(&accel_x, &accel_y, &accel_z, &gyro_x, &gyro_y, &gyro_z);
+
+        // Check conditions to adjust motor speed
+        if (accel_x < -0.5) {
+            // Calculate new duty cycle based on accelerometer data
+            uint32_t duty = 1023; // Example: 0 to 1000 based on the ay value (adjust for your hardware)
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+            ESP_LOGI(TAG, "Motor duty set to %u", (unsigned int)duty);
+               
+        } 
+        else if (accel_x > 0.5) {
+            // Calculate new duty cycle based on accelerometer data
+            uint32_t duty = 1023; // Example: 0 to 1000 based on the ay value (adjust for your hardware)
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, duty);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
+            ESP_LOGI(TAG, "Motor 2 duty set to %u", (unsigned int)duty);
+               
+        } else if (accel_y > 0.4) {
+            // Calculate new duty cycle based on accelerometer data
+            uint32_t duty = 1023; // Example: 0 to 1000 based on the ay value (adjust for your hardware)
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, duty);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+            ESP_LOGI(TAG, "2 Motors duty set to %u", (unsigned int)duty);
+               
+        } else {
+            // Stop the motors if no condition is met
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 0);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}
+
+
 
 
 
