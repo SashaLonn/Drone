@@ -1,13 +1,14 @@
-## DC motors MPU 6050 controlling  using ESP32-s3 Feather
+# MPU 6050 controlling DC motors using ESP32-s3 Feather
 Sasha Soloviova ss226sh
 
-3Dcubb visualization of accelerometer and gyrometer values from MPU-6050 using ESP32-S3 MCU. The results are displayed on a local web server using Wi-Fi.Data is read directly from registers using the C language
+3Dcubb visualization of accelerometer and gyrometer values from MPU-6050 using ESP32-S3 MCU. The results are displayed on a local web server using Wi-Fi.Data is read directly from registers using the C language. Accel X value is controling 2 dc-motors.
 
-I had a problem with the installation of Espressif IDF. Besides that, it will take approximately 1 day.
+I had a problem with the installation of Espressif IDF, it can take some extra time. Besides that, it will take approximately 1 day.
 
+It is my dream to build a drone from scratch. This is the first step in my drone project. These values from MPU 6050 will help define the drone's position and assist in self-adjusting its orientation and controlling DC motors.By building this project, I will gain a good understanding of how the ESP-IDF works, how to read and visualize sensor values, how to controll motors with PWM, and much more.
 
-It is my dream to build a drone from scratch. This is the first step in my drone project. These values will help define the drone's position and assist in self-adjusting its orientation. By building this project, I will gain a good understanding of how the ESP-IDF works, how to read and visualize sensor values, and much more.
 ## List of material
+|MC- Esp32-s3| ![Alt text 1](C:\MPU_6050\project-name\ESP32-s3.jpg)
 
 MC -Esp32-s3 is a microcontroller made by . It has dual-core processors running up to 240 MHz, with Wi-Fi and Bluetooth for wireless connections.The ESP32-S3 includes UART, SPI, I2C, and ADC interfaces for connecting sensors and devices . Low power consumption. (See datastit https://cdn-learn.adafruit.com/downloads/pdf/adafruit-esp32-s3-feather.pdf)
 
@@ -16,6 +17,7 @@ Sensor MPU 6050 combines a 3-axis accelerometer and a 3-axis gyroscope. This all
 usb C Cabel for connection to MC and computer
  
 6 cabels to connect sensor with mc
+
 
 ## Computer setup 
 
