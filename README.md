@@ -62,8 +62,8 @@ PlatformIO, on the other hand, is easier to use, especially for beginners. It su
 
 ## The code
 
-# To find the register addresses:
-Go to the MPU6050 datasheet and press Ctrl+F to search. Search for "accel_x" to find the relevant register address, as shown in this image:![alt text](<register_addr.png.png>). You can use both hexadecimal and decimal numbers. Repeat the process for "gyro_x". I have defined only the high-value address because the low value is the next address, but you can define both addresses as needed to modify the code in the int16_t read_raw_data(int addr); function. All my addresses are defined in drone.h Remember that you need all values for all three axes (x, y, and z) for both accelerometer and gyroscope data.
+### To find the register addresses:
+Go to the MPU6050 datasheet and press Ctrl+F to search. Search for "accel_x" to find the relevant register address, as shown in this image:![alt text](<register_addr.png>). You can use both hexadecimal and decimal numbers. Repeat the process for "gyro_x". I have defined only the high-value address because the low value is the next address, but you can define both addresses as needed to modify the code in the int16_t read_raw_data(int addr); function. All my addresses are defined in drone.h Remember that you need all values for all three axes (x, y, and z) for both accelerometer and gyroscope data.
 
 
 To read data directly from registers:
@@ -161,7 +161,13 @@ Data is presented on the local web server. My HTML code is stored inside a char 
 And video:<video controls src="webserver.mp4" title="Title"></video>
 
 
+## Finalizing the design 
 
+I was too ambitious at the beginning of the project. I had previous experience with embedded programming, so I thought I could build a real drone quickly. Now, I realize how silly that sounds. Besides, I spent too much time on 3D printing, which I never used in my final project, nor could I use somehow. But still, I am very happy with the results I achieved during these weeks. I should have started with the server earlier and done it in a simpler way, instead of trying to place my HTML file in another directory. It was educational and fun. I will continue with this project, but this time with much more thoughtful steps.
+Here the result: C:\MPU_6050\project-name\final1.jpg
+C:\MPU_6050\project-name\final2.jpg
+C:\MPU_6050\project-name\final3.jpg
+<video controls src="final4.mp4" title="Title"></video>
 
 
 
