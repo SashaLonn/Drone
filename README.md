@@ -8,7 +8,7 @@ I had a problem with the installation of Espressif IDF, it can take some extra t
 It is my dream to build a drone from scratch. This is the first step in my drone project. These values from MPU 6050 will help define the drone's position and assist in self-adjusting its orientation and controlling DC motors.By building this project, I will gain a good understanding of how the ESP-IDF works, how to read and visualize sensor values, how to controll motors with PWM, and much more.
 
 ## List of material
-|MC- Esp32-s3| ![Alt text 1](ESP32-s3.jpg)
+|MC- Esp32-s3| ![Alt text 1](ESP32-s3.jpg)|
 
 MC -Esp32-s3 is a microcontroller made by . It has dual-core processors running up to 240 MHz, with Wi-Fi and Bluetooth for wireless connections.The ESP32-S3 includes UART, SPI, I2C, and ADC interfaces for connecting sensors and devices . Low power consumption. (See datastit https://cdn-learn.adafruit.com/downloads/pdf/adafruit-esp32-s3-feather.pdf)
 
@@ -162,7 +162,8 @@ Data is presented on the local web server. My HTML code is stored inside a char 
 I don't use any database; it is not needed in my current project because the data needs to be updated continuously, and previous data isn't very useful. In my future projects, I might add a database to have the ability to train the drone in a specific space, such as an apartment.
 
 Here is  my simpler solution. Here is result:![alt text](webServer.png)
-And video:<video controls src="webserver.mp4" title="Title"></video>
+And video:
+[Se video](webserver.mp4)
 
 
 ## Finalizing the design 
@@ -174,7 +175,7 @@ Here the result:
 :![alt text](final3.jpg)
 
 
-<video controls src="final4.mp4" title="Title"></video>
+[Se video](final4.mp4)
 
 
 
