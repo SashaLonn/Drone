@@ -29,10 +29,10 @@ This repository includes the KiCad schematic file (`drone.kicad_sch`) for the dr
 
 # Connecting MPU 6050 with ESP32-s3
 
-MPU VDD to 3.3 V
-GND to GND(4)
-SDA to SDA(4)
-SCL to SCL 
+- **VDD**: Connect to 3.3V supply.
+- **GND**: Connect to ground (GND).
+- **SDA**: Connect to the SDA pin on your microcontroller ( pin 3).
+- **SCL**: Connect to the SCL pin on your microcontroller ( pin 4).
 
 # Connecting DC motor to ESP32-s3 
 Transistor connection wich has three pins:
